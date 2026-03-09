@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date Coach AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 680px;
+            height: 90vh;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        /* Header */
+        .chat-header {
+            background: linear-gradient(135deg, #e94560, #c73652);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 4px 15px rgba(233,69,96,0.4);
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 2px solid rgba(255,255,255,0.4);
+            flex-shrink: 0;
+        }
+
+        .header-info h2 {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .header-info p {
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Chat messages */
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-box::-webkit-scrollbar { width: 4px; }
+        .chat-box::-webkit-scrollbar-track { background: transparent; }
+        .chat-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        /* Welcome message */
+        .welcome {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
+            padding: 10px 20px;
+        }
+
+        .welcome span {
+            background: rgba(255,255,255,0.05);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Message bubbles */
+        .message-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-row.user {
+            flex-direction: row-reverse;
+        }
+
+        .bubble-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .bot .bubble-avatar {
+            background: linear-gradient(135deg, #e94560, #c73652);
+        }
+
+        .user .bubble-avatar {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .bot .bubble {
+            background: rgba(255,255,255,0.1);
+            color: #e2e8f0;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .user .bubble {
+            background: linear-gradient(135deg, #e94560, #c73652);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bubble strong { color: #fbbf24; }
+        .bubble h3 { color: #fbbf24; margin: 8px 0 4px; font-size: 14px; }
+        .bubble ul { padding-left: 16px; margin: 6px 0; }
+        .bubble li { margin-bottom: 4px; }
+
+        /* Typing indicator */
+        .typing-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .typing-bubble {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 14px 18px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .typing-bubble span {
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: bounce 1.2s infinite;
+        }
+
+        .typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 20px 24px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        textarea {
+            flex: 1;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 14px;
+            color: white;
+            font-size: 14px;
+            padding: 12px 16px;
+            resize: none;
+            font-family: inherit;
+            max-height: 120px;
+            outline: none;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+
+        textarea::placeholder { color: rgba(255,255,255,0.35); }
+        textarea:focus { border-color: #e94560; }
+
+        .send-btn {
+            width: 46px;
+            height: 46px;
+            background: linear-gradient(135deg, #e94560, #c73652);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(233,69,96,0.4);
+        }
+
+        .send-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(233,69,96,0.6); }
+        .send-btn:active { transform: scale(0.95); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        /* Suggested prompts */
+        .suggestions {
+            padding: 0 24px 16px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .suggestion-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.7);
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .suggestion-btn:hover {
+            background: rgba(233,69,96,0.2);
+            border-color: #e94560;
+            color: white;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            body { padding: 0; }
+            .chat-container { height: 100vh; border-radius: 0; }
+            .bubble { max-width: 85%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="avatar">💘</div>
+            <div class="header-info">
+                <h2>Alex — Date Coach</h2>
+                <p><span class="online-dot"></span>Online & ready to help</p>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-box" id="chat-box">
+            <div class="welcome">
+                <span>💬 Start a conversation with Alex</span>
+            </div>
+        </div>
+
+        <!-- Suggested Prompts -->
+        <div class="suggestions" id="suggestions">
+            <button class="suggestion-btn" onclick="useSuggestion('I have a first date tomorrow 😬')">First date nerves 😬</button>
+            <button class="suggestion-btn" onclick="useSuggestion('How do I know if someone likes me?')">Do they like me? 💭</button>
+            <button class="suggestion-btn" onclick="useSuggestion('I just got out of a breakup')">After a breakup 💔</button>
+            <button class="suggestion-btn" onclick="useSuggestion('Help me with my dating app bio')">Dating app bio ✍️</button>
+        </div>
+
+        <!-- Input -->
+        <div class="input-area">
+            <textarea id="user-input" placeholder="Ask Alex anything about dating..." rows="1"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let chatHistory = [];
+        let isLoading = false;
+
+        const textarea = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+        const chatBox = document.getElementById("chat-box");
+
+        // Auto resize textarea
+        textarea.addEventListener("input", function () {
+            this.style.height = "auto";
+            this.style.height = Math.min(this.scrollHeight, 120) + "px";
+        });
+
+        // Send on Enter (Shift+Enter for new line)
+        textarea.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function useSuggestion(text) {
+            textarea.value = text;
+            textarea.style.height = "auto";
+            sendMessage();
+        }
+
+        function hideSuggestions() {
+            document.getElementById("suggestions").style.display = "none";
+        }
+
+        function addMessage(role, content) {
+            const row = document.createElement("div");
+            row.className = `message-row ${role}`;
+
+            const avatarDiv = document.createElement("div");
+            avatarDiv.className = "bubble-avatar";
+            avatarDiv.textContent = role === "bot" ? "💘" : "🧑";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+            bubble.innerHTML = formatMessage(content);
+
+            row.appendChild(avatarDiv);
+            row.appendChild(bubble);
+            chatBox.appendChild(row);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showTyping() {
+            const row = document.createElement("div");
+            row.className = "typing-row";
+            row.id = "typing-indicator";
+
+            const avatarDiv = document.createElement("div");
+            avatarDiv.className = "bubble-avatar";
+            avatarDiv.style.background = "linear-gradient(135deg, #e94560, #c73652)";
+            avatarDiv.textContent = "💘";
+
+            const bubble = document.createElement("div");
+            bubble.className = "typing-bubble";
+            bubble.innerHTML = "<span></span><span></span><span></span>";
+
+            row.appendChild(avatarDiv);
+            row.appendChild(bubble);
+            chatBox.appendChild(row);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function hideTyping() {
+            const indicator = document.getElementById("typing-indicator");
+            if (indicator) indicator.remove();
+        }
+
+        function formatMessage(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                .replace(/### (.*?)(\n|$)/g, "<h3>$1</h3>")
+                .replace(/\* (.*?)(\n|$)/g, "<li>$1</li>")
+                .replace(/\n/g, "<br>");
+        }
+
+        async function sendMessage() {
+            if (isLoading) return;
+            const message = textarea.value.trim();
+            if (!message) return;
+
+            hideSuggestions();
+            isLoading = true;
+            sendBtn.disabled = true;
+            textarea.value = "";
+            textarea.style.height = "auto";
+
+            addMessage("user", message);
+            chatHistory.push({ role: "user", content: message });
+            showTyping();
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+
+                const data = await response.json();
+                hideTyping();
+                addMessage("bot", data.reply);
+                chatHistory.push({ role: "assistant", content: data.reply });
+            } catch (error) {
+                hideTyping();
+                addMessage("bot", "Oops! I couldn't connect to the server. Make sure your backend is running! 🔧");
+            }
+
+            isLoading = false;
+            sendBtn.disabled = false;
+            textarea.focus();
+        }
+    </script>
+</body>
+</html>
