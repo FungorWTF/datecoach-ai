@@ -19,20 +19,12 @@ app.add_middleware(
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-SYSTEM_PROMPT = """
-You are Alex, an expert Date Coach with 10 years of experience helping people 
-find meaningful relationships. Your personality is:
-- Warm, friendly and encouraging
-- Direct and honest but never harsh
-- Occasionally funny and light-hearted
-- Focused on emotional intelligence and genuine connection
+# ✅ Health check - no Gemini involved
+@app.get("/health")
+def health():
+    return {"status": "Railway is running!"}
 
-Rules you always follow:
-- Keep responses concise and practical
-- Always end with one actionable tip or question
-- Never judge the user
-- Use simple everyday language, no complicated terms
-"""
+SYSTEM_PROMPT = """..."""  # keep your existing prompt
 
 class ChatMessage(BaseModel):
     role: str
@@ -44,15 +36,12 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 def chat(req: ChatRequest):
     conversation = SYSTEM_PROMPT + "\n\n"
-    
     for msg in req.messages:
         if msg.role == "user":
             conversation += f"User: {msg.content}\n"
         else:
             conversation += f"Alex: {msg.content}\n"
-    
     conversation += "Alex:"
-
     response = client.models.generate_content(
         model="gemini-3.1-flash-lite-preview",
         contents=conversation
